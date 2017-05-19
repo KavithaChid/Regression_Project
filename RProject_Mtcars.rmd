@@ -1,0 +1,101 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+---
+title: " Is MPG gain better with auto or manual transmission ?"
+author: "Chidambaranathan, Kavitha"
+date: "19-05-2017"
+output: html_document
+---
+
+##Executive Summary:
+Provided with a data set of 32 different car types in mtcars, the aim was to find whether automatic transmission or manual transmission leads to better gain of miles per gallon for a car. Other significant contributing variables should also be explored.
+
+It was found that manual transmission clearly has a better gain to the mpg value than auto transmission. The gain is quantified to about 1.8 mpg using manual transmission.
+
+##Exploratory Analysis:
+Data definition provided for the mtcars data set is as follows:
+A data frame with 32 observations on 11 variables.  
+1.	mpg	Miles/(US) gallon  
+2.	cyl	Number of cylinders  
+3.	disp	Displacement (cu.in.)  
+4.	hp	Gross horsepower  
+5.	drat	Rear axle ratio  
+6.	wt	Weight (1000 lbs)  
+7.	qsec	1/4 mile time  
+8.	vs	V/S  
+9.	am	Transmission (0 = automatic, 1 = manual)  
+10.	gear	Number of forward gears  
+11.	carb	Number of carburetors  
+
+As a first step, check sample data of mtcars and their data type.
+```{r exploratory, echo = TRUE}
+library(car)
+data(mtcars)
+head(mtcars)
+str(mtcars)
+```
+Some of the fields will need to change to factor.
+```{r dataprep }
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$am <- as.factor(mtcars$am)
+mtcars$vs <- as.factor(mtcars$vs)
+mtcars$gear <- as.factor(mtcars$gear)
+mtcars$carb <- as.factor(mtcars$carb)
+```
+##Model Selection
+In order to determine the variables to include in the model, we first fit the linear model by including all variables and checking the vif.
+```{r fit model }
+fitall <- lm(mpg ~ ., data = mtcars)
+vif(fitall)
+```
+Including many variables that are highly correlated to *am*, our variable of interest should be avoided. Top 3 variables with high correlation here are carb, cyl and disp  and need to be watched out for.
+I would next use the step function to work backwards for model selection.
+```{r fit options }
+step (fitall, direction = "backward")
+```
+Step analyses 7 models and returns the best model fit as cyl + hp + wt + am
+ 
+As the differences in AIC for the last 3 models are less than 1 in each case,it bears to check these further with anova to see the RSS.
+
+```{r model analysis}
+fit3 = lm(mpg ~ am + cyl + hp + wt + qsec + vs, data=mtcars)
+fit2 = lm(mpg ~ am + cyl + hp + wt + vs, data=mtcars)
+fit1 = lm(mpg ~ am + cyl + hp + wt, data=mtcars)
+```
+```{r anova model }
+anova(fit3, fit2, fit1)
+
+```
+Model3 still looks to be be best fit. Lets check the co-efficients of this model.
+
+```{r bestfit }
+bestfit <- lm(formula = mpg ~ am + cyl + hp + wt, data = mtcars)
+summary(bestfit)$coef
+
+
+```
+I would tend to go with the bestfit model to analyze the graphs further. See appendix for the graphs. 
+
+The residual vs. fitted plot looks as expected with most of the values lying above and below the 0 reference line.  No major pattern such as heteroskedacity is observed. 
+The QQ plot also shows that data clearly fall on the regression line proving normality of errors. 
+
+##Selected Model Analysis
+
+```{r vif of bestfit }
+vif(bestfit)
+summary(bestfit)
+```
+##Conclusion
+
+MPG gain for manual transmission is 1.80. The probability is within acceptable range of 0.2. It should be noted that manual transmission is not the only factor contributing to mpg. There could be other factors including those not observed. However, it can be said number of cylinders, horse power and weight of the car also significantly contribute to the mpg value. 
+
+##Appendix
+
+Graphs ploted for the best fit model.
+```{r plot graphs}
+plot(bestfit)
+```
+
